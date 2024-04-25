@@ -13,11 +13,7 @@ app.use(express.json());
 //console.log(process.env.DB_USER);
 
 //mongodb connection
-const {
-  MongoClient,
-  ServerApiVersion,
-  ObjectId,
-} = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@edu-hub.mhxhu8a.mongodb.net/?retryWrites=true&w=majority&appName=edu-hub`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -44,10 +40,61 @@ async function run() {
     const enrolledCollection = database.collection("enrolled");
     const appliedCollection = database.collection("applied");
 
-// ************* routes for user*****************
+    // ************* routes for user*****************
 
+    app.post("new-user", async (req, res) => {
+      const newUser = req.body;
+      const result = await userCollection.insertOne(newUser);
+      res.send(result);
+    });
+    //all  user
+    app.get("/users", async (req, res) => {
+      const result = await userCollection.find({}).toArray();
+      res.send(result);
+    });
+    //userb by id
+    app.get("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await userCollection.findOne(query);
+      res.send(result);
+    });
+    //user by email;
+    app.get("/user/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await userCollection.findOne(query);
+      res.send(result);
+    });
 
-
+    //delete user
+    app.delete("/delete-user", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
+    });
+    //update user
+    app.put("/update-user/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedUser = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          name: updatedUser.name,
+          email: updatedUser.email,
+          role: updatedUser.option,
+          address: updatedUser.address,
+          phone: updatedUser.phone,
+          about: updatedUser.about,
+          photoUrl: updatedUser.photoUrl,
+          skills: updatedUser.skills ? updatedUser.skills : null,
+        },
+      };
+      const result = await userCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
+    });
 
     // ****************Define classes routes *******************
     app.post("/new-class", async (req, res) => {
@@ -334,64 +381,65 @@ async function run() {
     });
 
     //**********get all instructor**************
-    app.get('/instructors', async (req, res) => {
-      const result = await userCollection.find({ role: 'instructor' }).toArray();
+    app.get("/instructors", async (req, res) => {
+      const result = await userCollection
+        .find({ role: "instructor" })
+        .toArray();
       res.send(result);
-  })
+    });
 
-  app.get('/enrolled-classes/:email', async (req, res) => {
+    app.get("/enrolled-classes/:email", async (req, res) => {
       const email = req.params.email;
       const query = { userEmail: email };
       const pipeline = [
-          {
-              $match: query
+        {
+          $match: query,
+        },
+        {
+          $lookup: {
+            from: "classes",
+            localField: "classesId",
+            foreignField: "_id",
+            as: "classes",
           },
-          {
-              $lookup: {
-                  from: "classes",
-                  localField: "classesId",
-                  foreignField: "_id",
-                  as: "classes"
-              }
+        },
+        {
+          $unwind: "$classes",
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "classes.instructorEmail",
+            foreignField: "email",
+            as: "instructor",
           },
-          {
-              $unwind: "$classes"
+        },
+        {
+          $project: {
+            _id: 0,
+            classes: 1,
+            instructor: {
+              $arrayElemAt: ["$instructor", 0],
+            },
           },
-          {
-              $lookup: {
-                  from: "users",
-                  localField: "classes.instructorEmail",
-                  foreignField: "email",
-                  as: "instructor"
-              }
-          },
-          {
-              $project: {
-                  _id: 0,
-                  classes: 1,
-                  instructor: {
-                      $arrayElemAt: ["$instructor", 0]
-                  }
-              }
-          }
-
-      ]
+        },
+      ];
       const result = await enrolledCollection.aggregate(pipeline).toArray();
       // const result = await enrolledCollection.find(query).toArray();
       res.send(result);
-  })
+    });
 
-  //*****************pply for instructor*******************
-  app.post('/as-instructor', async (req, res) => {
-    const data = req.body;
-    const result = await appliedCollection.insertOne(data);
-    res.send(result);
-})
-app.get('/applied-instructors/:email',   async (req, res) => {
-    const email = req.params.email;
-    const result = await appliedCollection.findOne({email});
-    res.send(result);
-});
+    //*****************pply for instructor*******************
+    app.post("/as-instructor", async (req, res) => {
+      const data = req.body;
+      const result = await appliedCollection.insertOne(data);
+      res.send(result);
+    });
+    app.get("/applied-instructors/:email", async (req, res) => {
+      const email = req.params.email;
+      const result = await appliedCollection.findOne({ email });
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
