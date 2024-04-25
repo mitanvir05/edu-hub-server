@@ -3,14 +3,30 @@ const app = express();
 require("dotenv").config();
 const cors = require("cors");
 const stripe = require("stripe")(process.env.PAYMENT_SECRET);
-
+const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 3000;
 
 //middleware
 app.use(cors());
 app.use(express.json());
 
-//console.log(process.env.DB_USER);
+// verify token
+const verifyJWT = (req, res, next) => {
+  const authorization = req.headers.authorization;
+  if (!authorization) {
+    return res.status(401).send({ error: true, message: "Unauthorize access" });
+  }
+  const token = authorization?.split(" ")[1];
+  jwt.verify(token, process.env.ACCESS_SECRET, (err, decoded) => {
+    if (err) {
+      return res
+        .status(403)
+        .send({ error: true, message: "forbidden user or token has expired" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+};
 
 //mongodb connection
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
@@ -35,25 +51,33 @@ async function run() {
     const userCollection = database.collection("users");
     const classesCollection = database.collection("classes");
     const cartCollection = database.collection("cart");
-    const orderCollection = database.collection("order");
     const paymentCollection = database.collection("payments");
     const enrolledCollection = database.collection("enrolled");
     const appliedCollection = database.collection("applied");
+    //***************set jwt token************
+    app.post("/api/set-token", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_SECRET, {
+        expiresIn: "24h",
+      });
+      res.send({ token });
+    });
 
     // ************* routes for user*****************
 
+    //create new user
     app.post("new-user", async (req, res) => {
       const newUser = req.body;
       const result = await userCollection.insertOne(newUser);
       res.send(result);
     });
     //all  user
-    app.get("/users", async (req, res) => {
+    app.get("/users",verifyJWT, async (req, res) => {
       const result = await userCollection.find({}).toArray();
       res.send(result);
     });
     //userb by id
-    app.get("/users/:id", async (req, res) => {
+    app.get("/users/:id",verifyJWT, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await userCollection.findOne(query);
@@ -68,7 +92,7 @@ async function run() {
     });
 
     //delete user
-    app.delete("/delete-user", async (req, res) => {
+    app.delete("/delete-user",verifyJWT, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await userCollection.deleteOne(query);
