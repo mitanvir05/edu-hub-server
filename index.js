@@ -17,7 +17,6 @@ const {
   MongoClient,
   ServerApiVersion,
   ObjectId,
-  Transaction,
 } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@edu-hub.mhxhu8a.mongodb.net/?retryWrites=true&w=majority&appName=edu-hub`;
 
@@ -44,6 +43,11 @@ async function run() {
     const paymentCollection = database.collection("payments");
     const enrolledCollection = database.collection("enrolled");
     const appliedCollection = database.collection("applied");
+
+// ************* routes for user*****************
+
+
+
 
     // ****************Define classes routes *******************
     app.post("/new-class", async (req, res) => {
@@ -377,6 +381,17 @@ async function run() {
       res.send(result);
   })
 
+  //*****************pply for instructor*******************
+  app.post('/as-instructor', async (req, res) => {
+    const data = req.body;
+    const result = await appliedCollection.insertOne(data);
+    res.send(result);
+})
+app.get('/applied-instructors/:email',   async (req, res) => {
+    const email = req.params.email;
+    const result = await appliedCollection.findOne({email});
+    res.send(result);
+});
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
