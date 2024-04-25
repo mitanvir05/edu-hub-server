@@ -2,6 +2,8 @@ const express = require("express");
 const app = express();
 require("dotenv").config();
 const cors = require("cors");
+const stripe = require("stripe")(process.env.PAYMENT_SECRET);
+
 const port = process.env.PORT || 3000;
 
 //middleware
@@ -11,7 +13,12 @@ app.use(express.json());
 //console.log(process.env.DB_USER);
 
 //mongodb connection
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const {
+  MongoClient,
+  ServerApiVersion,
+  ObjectId,
+  Transaction,
+} = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@edu-hub.mhxhu8a.mongodb.net/?retryWrites=true&w=majority&appName=edu-hub`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -38,7 +45,7 @@ async function run() {
     const enrolledCollection = database.collection("enrolled");
     const appliedCollection = database.collection("applied");
 
-    // Define classes routes
+    // ****************Define classes routes *******************
     app.post("/new-class", async (req, res) => {
       const newClass = req.body;
       const result = await classesCollection.insertOne(newClass);
@@ -120,7 +127,7 @@ async function run() {
       res.send(result);
     });
 
-    //Carts Routes
+    //*****************Carts Routes**************
     app.post("/add-to-cart", async (req, res) => {
       const newCartItem = req.body;
       const result = await cartCollection.insertOne(newCartItem);
@@ -155,12 +162,94 @@ async function run() {
     });
 
     // delete cart item
-    app.delete('/delete-cart-item/:id',async(req,res)=>{
-      const id = req.params.id
-      const query={classId:id}
-      const result = await cartCollection.deleteOne(query)
-      res.send(result)
-    })
+    app.delete("/delete-cart-item/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { classId: id };
+      const result = await cartCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    //******************* Payments Routes ************
+
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price) * 100;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["catd"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    //post paymment info to db
+    app.post("/payment-info", async (req, res) => {
+      const paymentInfo = req.bd;
+      const classesId = paymentInfo.classesId;
+      const userEmail = paymentInfo.userEmail;
+      const singleClassId = req.query.classId;
+      let query;
+      if (singleClassId) {
+        query = { classId: singleClassId, userMail: userEmail };
+      } else {
+        query = { classId: { $in: classesId } };
+      }
+      const classesQuery = {
+        _id: { $in: classesId.map((id) => new ObjectId(id)) },
+      };
+      const classes = await classesCollection.find(classesQuery).toArray();
+      const newEnrolledData = {
+        userEmail: userEmail,
+        classId: singleClassId.map((id) => new ObjectId(id)),
+        transactionId: paymentInfo.transactionId,
+      };
+      const updatedDoc = {
+        $set: {
+          totalEnrolled:
+            classes.reduce(
+              (total, current) => total + current.totalEnrolled,
+              0
+            ) + 1 || 0,
+          availableSeats:
+            classes.reduce(
+              (total, current) => total + current.availableSeats,
+              0
+            ) - 1 || 0,
+        },
+      };
+      const updatedResult = await classesCollection.updateMany(
+        classesQuery,
+        updatedDoc,
+        { upsert: true }
+      );
+      const enrolledResult = await enrolledCollection.insertOne(
+        newEnrolledData
+      );
+      const deletedResult = await cartCollection.deleteMany(query);
+      const paymentResult = await paymentCollection.insertOne(paymentInfo);
+      res.send({ paymentResult, deletedResult, enrolledResult, updatedResult });
+    });
+
+    //payment history
+    app.get("/payment-history/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { userEmail: email };
+      const result = await paymentCollection
+        .find(query)
+        .sort({ date: -1 })
+        .toArray();
+      res.send(result);
+    });
+
+    //payment history length
+    app.get("/payment-history-length/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { userEmail: email };
+      const total = await paymentCollection.countDocuments(query);
+      res.send({total});
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
