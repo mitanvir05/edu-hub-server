@@ -301,9 +301,9 @@ async function run() {
       res.send(result);
     });
 
-    // Admin status
+    // **********************Admin status**********************
 
-    app.get("/admin-stats", verifyJWT, verifyAdmin, async (req, res) => {
+    app.get("/admin-stats", async (req, res) => {
       // Get approved classes and pending classes and instructors
       const approvedClasses = (
         await classesCollection.find({ status: "approved" }).toArray()
@@ -328,6 +328,55 @@ async function run() {
       };
       res.send(result);
     });
+
+    //**********get all instructor**************
+    app.get('/instructors', async (req, res) => {
+      const result = await userCollection.find({ role: 'instructor' }).toArray();
+      res.send(result);
+  })
+
+  app.get('/enrolled-classes/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { userEmail: email };
+      const pipeline = [
+          {
+              $match: query
+          },
+          {
+              $lookup: {
+                  from: "classes",
+                  localField: "classesId",
+                  foreignField: "_id",
+                  as: "classes"
+              }
+          },
+          {
+              $unwind: "$classes"
+          },
+          {
+              $lookup: {
+                  from: "users",
+                  localField: "classes.instructorEmail",
+                  foreignField: "email",
+                  as: "instructor"
+              }
+          },
+          {
+              $project: {
+                  _id: 0,
+                  classes: 1,
+                  instructor: {
+                      $arrayElemAt: ["$instructor", 0]
+                  }
+              }
+          }
+
+      ]
+      const result = await enrolledCollection.aggregate(pipeline).toArray();
+      // const result = await enrolledCollection.find(query).toArray();
+      res.send(result);
+  })
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
