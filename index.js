@@ -248,7 +248,57 @@ async function run() {
       const email = req.params.email;
       const query = { userEmail: email };
       const total = await paymentCollection.countDocuments(query);
-      res.send({total});
+      res.send({ total });
+    });
+
+    //********************enrollment routes********************
+
+    app.get("/popular_classes", async (req, res) => {
+      const result = await classesCollection
+        .find()
+        .sort({ totalEnrolled: -1 })
+        .limit(6)
+        .toArray();
+      res.send(result);
+    });
+
+    //popullar instructors
+    app.get("/popular-instructors", async (req, res) => {
+      const pipeline = [
+        {
+          $group: {
+            _id: "$instructorEmail",
+            totalEnrolled: { $sum: "$totalEnrolled" },
+          },
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "email",
+            as: "instructor",
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            instructor: {
+              $arrayElemAt: ["$instructor", 0],
+            },
+            totalEnrolled: 1,
+          },
+        },
+        {
+          $sort: {
+            totalEnrolled: -1,
+          },
+        },
+        {
+          $limit: 6,
+        },
+      ];
+      const result = await classesCollection.aggregate(pipeline).toArray();
+      res.send(result);
     });
 
     // Send a ping to confirm a successful connection
