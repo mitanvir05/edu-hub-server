@@ -1,0 +1,26 @@
+[
+    {
+    "name":"watson",
+    "email":"watson@taylor.com",
+    "photoURL":"https://i.ibb.co/KbWfZx0/0aa8581c2cb0aa948d63ce3ddad90c81.jpg",
+    "role":"instructor",
+    "gender":"Male",
+    "address":"Dhaka",
+    "phone":"01777777777",
+    "about":"''",
+    "skills":null
+},
+    {
+    "name":"Watson",
+    "email":"watson@taylor.com",
+    "photoURL":"https://i.ibb.co/KbWfZx0/0aa8581c2cb0aa948d63ce3ddad90c81.jpg",
+    "role":"instructor",
+    "gender":"Male",
+    "address":"Dhaka",
+    "phone":"01777777777",
+    "about":"''",
+    "skills":null
+}
+
+
+]

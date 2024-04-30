@@ -90,10 +90,15 @@ async function run() {
     // ************* routes for user*****************
 
     //create new user
-    app.post("new-user", async (req, res) => {
-      const newUser = req.body;
-      const result = await userCollection.insertOne(newUser);
-      res.send(result);
+    app.post("/new-user", async (req, res) => {
+      try {
+        const newUser = req.body;
+        const result = await userCollection.insertOne(newUser);
+        res.status(201).send(result); // 201 indicates successful creation
+      } catch (error) {
+        console.error("Error inserting user:", error);
+        res.status(500).send({ error: "Failed to insert user" });
+      }
     });
     //all  user
     app.get("/users", async (req, res) => {
@@ -234,9 +239,19 @@ async function run() {
     });
 
     //get cart item by id
-    app.get("/cart-item/:id",verifyJWT, async (req, res) => {
+    // app.get("/cart-item/:id",verifyJWT, async (req, res) => {
+    //   const id = req.params.id;
+    //   const email = req.body.email;
+    //   const query = { classId: id, userMail: email };
+    //   const projection = { classId: 1 };
+    //   const result = await cartCollection.findOne(query, {
+    //     projection: projection,
+    //   });
+    //   res.send(result);
+    // });
+    app.get("/cart-item/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
-      const email = req.body.email;
+      const email = req.query.email; // Use req.query.email to access the email parameter
       const query = { classId: id, userMail: email };
       const projection = { classId: 1 };
       const result = await cartCollection.findOne(query, {
@@ -377,6 +392,11 @@ async function run() {
             foreignField: "email",
             as: "instructor",
           },
+        },
+        {
+          $match:{
+            "instructor.role":"instructor"
+          }
         },
         {
           $project: {
