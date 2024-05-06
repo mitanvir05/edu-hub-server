@@ -262,17 +262,42 @@ async function run() {
 
     //cart info by user email
 
-    app.get("/cart/:email",verifyJWT, async (req, res) => {
-      const email = req.params.email;
-      const query = { userMail: email };
-      const projection = { classId: 1 };
-      const carts = await cartCollection.find(query, {
-        projection: projection,
-      });
-      const classIds = carts.map((cart) => new ObjectId(cart.classId));
-      const query2 = { _id: { $in: classIds } };
-      const result = await classesCollection.find(query2).toArray();
-      res.send(result);
+    // app.get("/cart/:email",verifyJWT, async (req, res) => {
+    //   const email = req.params.email;
+    //   const query = { userMail: email };
+    //   const projection = { classId: 1 };
+    //   const carts = await cartCollection.find(query, {
+    //     projection: projection,
+    //   });
+    //   const classIds = carts.map((cart) => new ObjectId(cart.classId));
+    //   const query2 = { _id: { $in: classIds } };
+    //   const result = await classesCollection.find(query2).toArray();
+    //   res.send(result);
+    // });
+    app.get("/cart/:email", verifyJWT, async (req, res) => {
+      try {
+        const email = req.params.email;
+        const query = { userMail: email };
+        const projection = { classId: 1 };
+        const carts = await cartCollection.find(query, {
+          projection: projection,
+        }).toArray(); // Convert cursor to array
+    
+        // Extract classIds from carts
+        const classIds = carts.map((cart) => new ObjectId(cart.classId));
+    
+        // Check if classIds is not empty before querying
+        if (classIds.length === 0) {
+          return res.status(404).json({ error: "No classes found for this user." });
+        }
+    
+        const query2 = { _id: { $in: classIds } };
+        const result = await classesCollection.find(query2).toArray();
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal server error" });
+      }
     });
 
     // delete cart item
