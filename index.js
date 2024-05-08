@@ -316,7 +316,7 @@ async function run() {
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: "usd",
-        payment_method_types: ["catd"],
+        payment_method_types: ["card"],
       });
       res.send({
         clientSecret: paymentIntent.client_secret,
@@ -324,52 +324,41 @@ async function run() {
     });
 
     //post paymment info to db
-    app.post("/payment-info", async (req, res) => {
-      const paymentInfo = req.bd;
+    app.post('/payment-info', verifyJWT, async (req, res) => {
+      const paymentInfo = req.body;
       const classesId = paymentInfo.classesId;
       const userEmail = paymentInfo.userEmail;
       const singleClassId = req.query.classId;
       let query;
+      // const query = { classId: { $in: classesId } };
       if (singleClassId) {
-        query = { classId: singleClassId, userMail: userEmail };
+          query = { classId: singleClassId, userMail: userEmail };
       } else {
-        query = { classId: { $in: classesId } };
+          query = { classId: { $in: classesId } };
       }
-      const classesQuery = {
-        _id: { $in: classesId.map((id) => new ObjectId(id)) },
-      };
+      const classesQuery = { _id: { $in: classesId.map(id => new ObjectId(id)) } }
       const classes = await classesCollection.find(classesQuery).toArray();
       const newEnrolledData = {
-        userEmail: userEmail,
-        classId: singleClassId.map((id) => new ObjectId(id)),
-        transactionId: paymentInfo.transactionId,
-      };
+          userEmail: userEmail,
+          classesId: classesId.map(id => new ObjectId(id)),
+          transactionId: paymentInfo.transactionId,
+      }
       const updatedDoc = {
-        $set: {
-          totalEnrolled:
-            classes.reduce(
-              (total, current) => total + current.totalEnrolled,
-              0
-            ) + 1 || 0,
-          availableSeats:
-            classes.reduce(
-              (total, current) => total + current.availableSeats,
-              0
-            ) - 1 || 0,
-        },
-      };
-      const updatedResult = await classesCollection.updateMany(
-        classesQuery,
-        updatedDoc,
-        { upsert: true }
-      );
-      const enrolledResult = await enrolledCollection.insertOne(
-        newEnrolledData
-      );
+          $set: {
+              totalEnrolled: classes.reduce((total, current) => total + current.totalEnrolled, 0) + 1 || 0,
+              availableSeats: classes.reduce((total, current) => total + current.availableSeats, 0) - 1 || 0,
+          }
+      }
+      // const updatedInstructor = await userCollection.find()
+      const updatedResult = await classesCollection.updateMany(classesQuery, updatedDoc, { upsert: true });
+      const enrolledResult = await enrolledCollection.insertOne(newEnrolledData);
       const deletedResult = await cartCollection.deleteMany(query);
       const paymentResult = await paymentCollection.insertOne(paymentInfo);
       res.send({ paymentResult, deletedResult, enrolledResult, updatedResult });
-    });
+  })
+
+    
+  
 
     //payment history
     app.get("/payment-history/:email", async (req, res) => {
@@ -481,46 +470,48 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/enrolled-classes/:email",verifyJWT, async (req, res) => {
+    app.get('/enrolled-classes/:email', verifyJWT, async (req, res) => {
       const email = req.params.email;
       const query = { userEmail: email };
       const pipeline = [
-        {
-          $match: query,
-        },
-        {
-          $lookup: {
-            from: "classes",
-            localField: "classesId",
-            foreignField: "_id",
-            as: "classes",
+          {
+              $match: query
           },
-        },
-        {
-          $unwind: "$classes",
-        },
-        {
-          $lookup: {
-            from: "users",
-            localField: "classes.instructorEmail",
-            foreignField: "email",
-            as: "instructor",
+          {
+              $lookup: {
+                  from: "classes",
+                  localField: "classesId",
+                  foreignField: "_id",
+                  as: "classes"
+              }
           },
-        },
-        {
-          $project: {
-            _id: 0,
-            classes: 1,
-            instructor: {
-              $arrayElemAt: ["$instructor", 0],
-            },
+          {
+              $unwind: "$classes"
           },
-        },
-      ];
+          {
+              $lookup: {
+                  from: "users",
+                  localField: "classes.instructorEmail",
+                  foreignField: "email",
+                  as: "instructor"
+              }
+          },
+          {
+              $project: {
+                  _id: 0,
+                  classes: 1,
+                  instructor: {
+                      $arrayElemAt: ["$instructor", 0]
+                  }
+              }
+          }
+
+      ]
       const result = await enrolledCollection.aggregate(pipeline).toArray();
       // const result = await enrolledCollection.find(query).toArray();
       res.send(result);
-    });
+  })
+
 
     //*****************apply for instructor*******************
     app.post("/as-instructor", async (req, res) => {
