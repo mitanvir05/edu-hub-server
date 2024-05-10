@@ -121,12 +121,12 @@ async function run() {
     });
 
     //delete user
-    app.delete("/delete-user",verifyJWT,verifyAdmin, async (req, res) => {
+    app.delete('/delete-user/:id', verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await userCollection.deleteOne(query);
       res.send(result);
-    });
+  })
     //update user
     app.put("/update-user/:id",verifyJWT,verifyAdmin, async (req, res) => {
       const id = req.params.id;
