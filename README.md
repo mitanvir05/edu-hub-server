@@ -37,6 +37,8 @@ Get a bird's-eye view of EduHub with our powerful admin panel. Monitor user acti
 ## Tech Stack
 
 
+* Express
+* Mongodb
 * Reactjs
 * Tailwind CSS
 * React Scroll
