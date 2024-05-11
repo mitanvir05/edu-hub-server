@@ -514,6 +514,11 @@ async function run() {
 
 
     //*****************apply for instructor*******************
+
+    app.get("/applied", async (req, res) => {
+      const result = await appliedCollection.find({}).toArray();
+      res.send(result);
+    });
     app.post("/as-instructor", async (req, res) => {
       const data = req.body;
       const result = await appliedCollection.insertOne(data);
