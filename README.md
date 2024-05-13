@@ -19,6 +19,16 @@ Join our community of educators by applying to become an instructor. Once approv
 Get a bird's-eye view of EduHub with our powerful admin panel. Monitor user activity, oversee instructors, and manage course approvals seamlessly. With the ability to make informed decisions, you'll ensure EduHub runs smoothly, fostering an ideal environment for learning.
 
 
+## Login Credentials
+### Admin :
+- Email: admin@gmail.com
+- Password : 123456
+### Instructor :
+- Email: instructor@gmail.com
+- Password : 123456
+### User :
+- Email:user@gmail.com
+- Password : 123456
 
 
 ## Features
