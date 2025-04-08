@@ -62,36 +62,25 @@ Get a bird's-eye view of EduHub with our powerful admin panel. Monitor user acti
 
 ## Screenshots
 - HomePage
-![App Screenshot](https://i.ibb.co/rs9Z7Gt/home.png)
+![App Screenshot](/assets/appimg/1.png)
 - Classes
-![App Screenshot](https://i.ibb.co/4Spc981/class.png)
+![App Screenshot](/assets/appimg/2.png)
 
 
 - Admin Dashboard
-![App Screenshot](https://i.ibb.co/dPcjpnQ/admin-home.png)
-![App Screenshot](https://i.ibb.co/Ctqj1Sv/admin-manage-class.png)
-![App Screenshot](https://i.ibb.co/gMpVV15/admin-user.png)
-![App Screenshot](https://i.ibb.co/Lp5W2mP/admin-application.png)
+![App Screenshot](/assets/appimg/3.png)
+![App Screenshot](/assets/appimg/4.png)
+![App Screenshot](/assets/appimg/5.png)
+![App Screenshot](/assets/appimg/6.png)
 
 - Instructor Dashboard
-![App Screenshot](https://i.ibb.co/nn42ccZ/ins-myclass.png)
-![App Screenshot](https://i.ibb.co/98sBycF/instructor-add-class.pngg)
-![App Screenshot](https://i.ibb.co/7Qj1CTV/ins-pend.png)
+![App Screenshot](/assets/appimg/7.png)
+![App Screenshot](/assets/appimg/8.png)
+![App Screenshot](/assets/appimg/9.png)
 
 
 - User Dashboard
-![App Screenshot](https://i.ibb.co/H7KpKP2/user-enroll-course.png)
-![App Screenshot](https://i.ibb.co/CKxPYTr/user-select-course.png)
-![App Screenshot](https://i.ibb.co/FHYkhM9/user-pay.png)
-![App Screenshot](https://i.ibb.co/D7CrFm2/user-application.png)
-
-
-
-
-
-
-
-
-
-
-
+![App Screenshot](/assets/appimg/10.png)
+![App Screenshot](/assets/appimg/11.png)
+![App Screenshot](/assets/appimg/12.png)
+![App Screenshot](/assets/appimg/13.png)
